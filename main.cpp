@@ -12,6 +12,7 @@ std::vector<double> read_T();
 System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double> T);
 System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, bool is_RGB);
 std::vector<std::vector<int>> line_strel(int len, int angle);
+//std::vector<std::vector<int>> bresenham(int x1, int y1, int x2, int y2);
 
 int main() {
 	//std::cout << "WCZYTYWANIE OBRAZU RGB\n";
@@ -26,7 +27,16 @@ int main() {
 	affine_pic_RGB->Save(R"(D:\AO\affine_polar.png)");
 	affine_pic_mono->Save(R"(D:\AO\affine_cameraman.png)");*/
 	//System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_RGB, 3, false);
-	line_strel(13, 60);
+	std::vector<std::vector<int>> strel = line_strel(13, 60);
+	/*for(int i = 0; i < strel.size(); i++) {
+		for(int j = 0; j < strel[i].size(); j++)
+			std::cout << strel[i][j] << " ";
+		std::cout << "\n";
+	}*/
+	int x_sr = strel.size() / 2;
+	int y_sr = strel[0].size() / 2;
+	std::cout << x_sr << " " << y_sr << "\n";
+
 
 	return 0;
 }
@@ -140,10 +150,32 @@ System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, b
 std::vector<std::vector<int>> line_strel(int len, int angle) {
 	double angle_rad = double(angle * M_PI) / 180.0;
 	int x1 = 0, y1 = 0;
-	int x2 = cos(angle_rad) * len;
-	int y2 = sin(angle_rad) * len;
-	std::cout << x2 << " " << y2 << "\n";
-	std::vector<std::vector<int>> a;
-	return a;
+	int x2 = (cos(angle_rad) * len) - 1;
+	int y2 = (sin(angle_rad) * len) - 1;
+	x2 = x2 % 2 ? x2 + 1 : x2;
+	y2 = y2 % 2 ? y2 + 1 : y2;
+	//std::cout << x2 << " " << y2 << "\n";
+	std::vector<std::vector<int>> strel_vec(x2 + 1, std::vector<int>(y2 + 1, 0));
+	int dx = abs(x2 - x1); 
+	int sx = x1 < x2 ? 1 : -1;
+	int dy = abs(y2 - y1); 
+	int sy = y1 < y2 ? 1 : -1;
+	int err = (dx > dy ? dx : -dy) / 2;
+	int e2;
+	for(;;) {
+		strel_vec[x1][y1] = 1; 
+		if(x1 == x2 && y1 == y2) 
+			break;
+		e2 = err;
+		if(e2 > -dx) { 
+			err -= dy; 
+			x1 += sx; 
+		}
+		if(e2 < dy) { 
+			err += dx;
+			y1 += sy; 
+		}
+	}
+	return strel_vec;
 }
 	
