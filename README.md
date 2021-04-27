@@ -1,7 +1,8 @@
 # Image processing
 
-Program allowing user to do some changes to a picture, which includes:
+Program performing some image processing operations, which includes:
 
 - affine transformation
 - entropy filtering
-- morphological gradient
+- closing using linear structuring element
+- calculating a geodesic
