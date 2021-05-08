@@ -8,10 +8,10 @@
 
 
 std::string read_path();
-//System::Drawing::Bitmap^ RGB_to_mono(System::Drawing::Bitmap^ pic_RGB);
+System::Drawing::Bitmap^ RGB_to_mono(System::Drawing::Bitmap^ pic_RGB);
 std::vector<double> read_T();
 System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double> T);
-System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood);
+System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, bool is_RGB);
 std::vector<std::vector<int>> line_strel(int len, int angle);
 //std::vector<std::vector<int>> bresenham(int x1, int y1, int x2, int y2);
 System::Drawing::Bitmap^ dilatation(System::Drawing::Bitmap^ pic, std::unordered_multimap<int, int> strel,
@@ -39,9 +39,9 @@ int main() {
 	affine_pic_RGB->Save(R"(D:\AO\affine_polar.png)");
 	affine_pic_mono->Save(R"(D:\AO\affine_cameraman.png)");*/
 	
-	System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, 9);
+	System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, 9, false);
 	ent_pic_mono->Save(R"(D:\AO\ent_cameraman.png)");
-	System::Drawing::Bitmap^ ent_pic_rgb = entropy_filt(pic_RGB_small, 3);
+	System::Drawing::Bitmap^ ent_pic_rgb = entropy_filt(pic_RGB_small, 3, true);
 	ent_pic_rgb->Save(R"(D:\AO\ent_maslo.png)");
 	
 	/*std::vector<std::vector<int>> vec_strel = line_strel(17, 60);
@@ -78,7 +78,7 @@ std::string read_path() {
 	return res;
 }
 
-/*System::Drawing::Bitmap^ RGB_to_mono(System::Drawing::Bitmap^ pic_RGB) {
+System::Drawing::Bitmap^ RGB_to_mono(System::Drawing::Bitmap^ pic_RGB) {
 	const int width = pic_RGB->Width;
 	const int height = pic_RGB->Height;
 	System::Drawing::Bitmap^ pic_mono = gcnew System::Drawing::Bitmap(width, height);
@@ -90,7 +90,7 @@ std::string read_path() {
 		}
 	}
 	return pic_mono;
-}*/
+}
 
 std::vector<double> read_T() {
 	std::vector<double> T_vec(4);
@@ -118,7 +118,9 @@ System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double
 	return res_pic;
 }
 
-System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood) {
+System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, bool is_RGB) {
+	if(is_RGB)
+		pic = RGB_to_mono(pic);
 	const int width = pic->Width;
 	const int height = pic->Height;
 	std::vector<std::vector<double>> entropy_vector_R(height, std::vector<double>(width, 0));
