@@ -13,6 +13,7 @@ std::vector<double> read_T();
 System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double> T);
 System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, bool is_RGB);
 std::vector<std::vector<int>> line_strel(int len, int angle);
+std::vector<std::vector<int>> mirror_matrix(std::vector<std::vector<int>>);
 //std::vector<std::vector<int>> bresenham(int x1, int y1, int x2, int y2);
 System::Drawing::Bitmap^ dilatation(System::Drawing::Bitmap^ pic, std::unordered_multimap<int, int> strel,
 									bool is_binary);
@@ -27,7 +28,7 @@ int main() {
 	System::String^ path_RGB = R"(D:\AO\polar.bmp)";
 	System::String^ path_RGB_small = R"(D:\AO\maslo.bmp)";
 	System::String^ path_mono = R"(D:\AO\cameraman.bmp)";
-	System::String^ path_bin = R"(D:\AO\dziury.bmp)";
+	System::String^ path_bin = R"(D:\AO\circles.png)";
 	System::Drawing::Bitmap^ pic_RGB = gcnew System::Drawing::Bitmap(path_RGB, true);
 	System::Drawing::Bitmap^ pic_RGB_small = gcnew System::Drawing::Bitmap(path_RGB_small, true);
 	System::Drawing::Bitmap^ pic_mono = gcnew System::Drawing::Bitmap(path_mono, true);
@@ -39,12 +40,13 @@ int main() {
 	affine_pic_RGB->Save(R"(D:\AO\affine_polar.png)");
 	affine_pic_mono->Save(R"(D:\AO\affine_cameraman.png)");*/
 	
-	System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, 9, false);
+	/*System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, 9, false);
 	ent_pic_mono->Save(R"(D:\AO\ent_cameraman.png)");
 	System::Drawing::Bitmap^ ent_pic_rgb = entropy_filt(pic_RGB_small, 3, true);
-	ent_pic_rgb->Save(R"(D:\AO\ent_maslo.png)");
+	ent_pic_rgb->Save(R"(D:\AO\ent_maslo.png)");*/
 	
-	/*std::vector<std::vector<int>> vec_strel = line_strel(17, 60);
+
+	std::vector<std::vector<int>> vec_strel = line_strel(13, 60);
 	for(int i = 0; i < vec_strel.size(); i++) {
 		for(int j = 0; j < vec_strel[i].size(); j++)
 			std::cout << vec_strel[i][j] << " ";
@@ -66,7 +68,7 @@ int main() {
 	System::Drawing::Bitmap^ closed_bmp = erosion(dilatation(pic_bin, map_strel, true), map_strel, true);
 	System::Drawing::Bitmap^ closed_mono = erosion(dilatation(pic_mono, map_strel, false), map_strel, false);
 	closed_bmp->Save(R"(D:\AO\closed_bmp.png)");
-	closed_mono->Save(R"(D:\AO\closed_mono.png)");*/
+	closed_mono->Save(R"(D:\AO\closed_mono.png)");
 
 	return 0;
 }
@@ -276,7 +278,22 @@ std::vector<std::vector<int>> line_strel(int len, int angle) {
 			y1 += sy; 
 		}
 	}
+	int rows = strel_vec.size();
+	int cols = strel_vec[0].size();
+	strel_vec = mirror_matrix(strel_vec);	
 	return strel_vec;
+}
+
+std::vector<std::vector<int>> mirror_matrix(std::vector<std::vector<int>> matrix) {
+	int rows = matrix.size();
+	int cols = matrix[0].size();
+	std::vector<std::vector<int>> mirror(rows, std::vector<int>(cols));
+	for(int i = 0; i < rows; i++) {
+		for(int j = 0; j < cols; j++) {
+			mirror[i][j] = matrix[i][cols - 1 - j];
+		}
+	}
+	return mirror;
 }
 
 System::Drawing::Bitmap^ dilatation(System::Drawing::Bitmap^ pic, std::unordered_multimap<int, int> strel, 
