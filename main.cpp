@@ -20,6 +20,7 @@ System::Drawing::Bitmap^ dilatation(System::Drawing::Bitmap^ pic, std::unordered
 System::Drawing::Bitmap^ erosion(System::Drawing::Bitmap^ pic, std::unordered_multimap<int, int> strel,
 								 bool is_binary);
 std::vector<std::vector<int>> normalize_vector(std::vector<std::vector<double>> input);
+System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y);
 
 
 int main() {
@@ -27,8 +28,8 @@ int main() {
 	//System::String^ path = gcnew System::String(read_path().c_str());
 	System::String^ path_RGB = R"(D:\AO\polar.bmp)";
 	System::String^ path_RGB_small = R"(D:\AO\maslo.bmp)";
-	System::String^ path_mono = R"(D:\AO\cameraman.bmp)";
-	System::String^ path_bin = R"(D:\AO\circles.png)";
+	System::String^ path_mono = R"(D:\AO\affine_cameraman.png)";
+	System::String^ path_bin = R"(D:\AO\dziury.bmp)";
 	System::Drawing::Bitmap^ pic_RGB = gcnew System::Drawing::Bitmap(path_RGB, true);
 	System::Drawing::Bitmap^ pic_RGB_small = gcnew System::Drawing::Bitmap(path_RGB_small, true);
 	System::Drawing::Bitmap^ pic_mono = gcnew System::Drawing::Bitmap(path_mono, true);
@@ -40,13 +41,13 @@ int main() {
 	affine_pic_RGB->Save(R"(D:\AO\affine_polar.png)");
 	affine_pic_mono->Save(R"(D:\AO\affine_cameraman.png)");*/
 	
-	/*System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, 9, false);
-	ent_pic_mono->Save(R"(D:\AO\ent_cameraman.png)");
+	//System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, 9, false);
+	//ent_pic_mono->Save(R"(D:\AO\ent_cameraman.png)");
 	System::Drawing::Bitmap^ ent_pic_rgb = entropy_filt(pic_RGB_small, 3, true);
-	ent_pic_rgb->Save(R"(D:\AO\ent_maslo.png)");*/
+	ent_pic_rgb->Save(R"(D:\AO\ent_maslo.png)");
 	
 
-	std::vector<std::vector<int>> vec_strel = line_strel(13, 60);
+	/*std::vector<std::vector<int>> vec_strel = line_strel(13, 60);
 	for(int i = 0; i < vec_strel.size(); i++) {
 		for(int j = 0; j < vec_strel[i].size(); j++)
 			std::cout << vec_strel[i][j] << " ";
@@ -68,7 +69,10 @@ int main() {
 	System::Drawing::Bitmap^ closed_bmp = erosion(dilatation(pic_bin, map_strel, true), map_strel, true);
 	System::Drawing::Bitmap^ closed_mono = erosion(dilatation(pic_mono, map_strel, false), map_strel, false);
 	closed_bmp->Save(R"(D:\AO\closed_bmp.png)");
-	closed_mono->Save(R"(D:\AO\closed_mono.png)");
+	closed_mono->Save(R"(D:\AO\closed_mono.png)");*/
+
+	//System::Drawing::Bitmap^ geodesic = geodesic_map(pic_bin, 21, 235);
+	//geodesic->Save(R"(D:\AO\geodesic.png)");
 
 	return 0;
 }
@@ -105,126 +109,90 @@ std::vector<double> read_T() {
 }
 
 System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double> T) {
-	const int width = pic->Width * T[0];
-	const int height = pic->Height * T[3];
-	System::Drawing::Bitmap^ res_pic = gcnew System::Drawing::Bitmap(width, height);
+	const int width = pic->Width;
+	const int height = pic->Height;
+	int max_up = height;
+	int max_right = width;
 	for(int kz = 0; kz < height; kz++) {
 		for(int kx = 0; kx < width; kx++) {
 			int nx = (int)((double)T[0] * kx + (double)T[2] * kz);
 			int nz = (int)((double)T[1] * kx + (double)T[3] * kz);
-			if(nz >= 0 && nz < height && nx >= 0 && nx < width) {
-				res_pic->SetPixel(nx, nz, pic->GetPixel(kx, kz));
-			}
+			if(nz > max_up)
+				max_up = nz;
+			if(nx > max_right)
+				max_right = nx;
+		}
+	}
+	max_right = max_right != width ? max_right + 1 : width;
+	max_up = max_up != height ? max_up + 1 : height;
+	System::Drawing::Bitmap^ res_pic = gcnew System::Drawing::Bitmap(max_right, max_up);
+	for(int kz = 0; kz < height; kz++) {
+		for(int kx = 0; kx < width; kx++) {
+			int nx = (int)((double)T[0] * kx + (double)T[2] * kz);
+			int nz = (int)((double)T[1] * kx + (double)T[3] * kz);
+			if(nz >= res_pic->Height)
+				std::cout << nz << "\n";
+			res_pic->SetPixel(nx, nz, pic->GetPixel(kx, kz));
+			
 		}
 	}
 	return res_pic;
 }
 
 System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, bool is_RGB) {
-	if(is_RGB)
+	std::cout << "FILTRACJA ENTROPII\nPrzetwarzanie obrazu, prosze czekac...\n";
+	std::cout << "\n|0%            100%|\n";
+	if(is_RGB) {
 		pic = RGB_to_mono(pic);
+	}
 	const int width = pic->Width;
 	const int height = pic->Height;
 	std::vector<std::vector<double>> entropy_vector_R(height, std::vector<double>(width, 0));
-	std::vector<std::vector<double>> entropy_vector_G(height, std::vector<double>(width, 0));
-	std::vector<std::vector<double>> entropy_vector_B(height, std::vector<double>(width, 0));
 	System::Drawing::Bitmap^ res_pic = gcnew System::Drawing::Bitmap(width, height);
 	for(int kz = 0; kz < height; kz++) {
-		std::cout << kz << "\n";
+		if(kz % (height / 10) == 0 && kz != 0)
+			std::cout << "**";
 		for(int kx = 0; kx < width; kx++) {
 			int sum = 0;
 			int count = 0;
 			std::vector<int> R(256, 0);
-			std::vector<int> G(256, 0);
-			std::vector<int> B(256, 0);
-				
 			for(int kz2 = kz - (nhood / 2); kz2 <= kz + (nhood / 2); kz2++) {
 				for(int kx2 = kx - (nhood / 2); kx2 <= kx + (nhood / 2); kx2++) {
 					if(kz2 >= 0 && kz2 < height && kx2 >= 0 && kx2 < width &&
 						(kz2 != kz || kx2 != kx)) {
 						System::Drawing::Color Px = pic->GetPixel(kx2, kz2);
 						R[(int)Px.R]++;
-						G[(int)Px.G]++;
-						B[(int)Px.B]++;
 						count++;
-						//std::cout << count << "\n";
 					}
-						//std::cout << kz2 << " " << kx2 << "\n";
 				}
 			}
-				
-			double ent_R = 0, ent_G = 0, ent_B = 0;
-			double prob_R, prob_G, prob_B;
+			double ent = 0;
+			double prob;
 			for(int i = 0; i <= 255; i++) {
-				prob_R = (double)R[i] / (double)count;
-				prob_G = (double)G[i] / (double)count;
-				prob_B = (double)B[i] / (double)count;
-				//if(prob_R > 0)
-					//std::cout << prob_R << " " << log10(prob_R) << "\n";
-				//std::cout << R[i] << "\n";
-					
-				ent_R -= prob_G > 0 ? log(prob_G)*prob_G : 0;
-				ent_G -= prob_G > 0 ? log(prob_G)*prob_G : 0;
-				ent_B -= prob_B > 0 ? log2(prob_B)*prob_B : 0;
-
-				//if(ent_R > 0)
-					//std::cout << ent_R << "\n";
+				prob = (double)R[i] / (double)count;
+				ent -= prob > 0 ? log(prob) * prob : 0;
 			}
-
-			entropy_vector_R[kz][kx] = ent_R;
-			entropy_vector_G[kz][kx] = ent_G;
-			entropy_vector_B[kz][kx] = ent_B;
-			//std::cout << "R " << entropy_vector_R[kz][kx] << "\n";
-			//std::cout << "G" << entropy_vector_G[kz][kx] << "\n";
-			//std::cout << "B" << entropy_vector_B[kz][kx] << "\n";
-
-			//System::Drawing::Color Px = System::Drawing::Color::FromArgb((int)(255*ent_R), 
-			//											(int)(255*ent_G), (int)(255*ent_B));
-			//std::cout << "R" << ent_R << " G" << ent_G << " B" << ent_B << "\n-\n";
-			//res_pic->SetPixel(kx, kz, Px);
-			//std::cout << "var = " << Px.R << "\n";
+			entropy_vector_R[kz][kx] = ent;
 		}
-		
 	}
-	/*std::cout << "aaa\n";
-	for(int i = 0; i < entropy_vector_R.size(); i++) {
-		for(int j = 0; j < entropy_vector_R[i].size(); j++) {
-			std::cout << entropy_vector_R[i][j] << "\n";
-		}
-	}*/
-	std::cout << "ok\n";
 	std::vector<std::vector<int>> normalized_R = normalize_vector(entropy_vector_R);
-	//std::cout << "size = " << normalized_R.size() << "\n";
-	//std::cout << normalized_R[5][6] << "\n";
-	std::vector<std::vector<int>> normalized_G = normalize_vector(entropy_vector_G);
-	std::vector<std::vector<int>> normalized_B = normalize_vector(entropy_vector_B);
-	/*std::cout << "--------------------------\n";
-		for(int i = 0; i < normalized_R.size(); i++) {
-			for(int j = 0; j < normalized_R[i].size(); j++) {
-				std::cout << normalized_R[i][j] << "\n";
-			}
-		}
-		std::cout << "---------------------------";*/
-
 	for(int kz = 0; kz < height; kz++) {
 		for(int kx = 0; kx < width; kx++) {
 			System::Drawing::Color Px = System::Drawing::Color::FromArgb(normalized_R[kz][kx], 
-											normalized_G[kz][kx], normalized_B[kz][kx]);
+											normalized_R[kz][kx], normalized_R[kz][kx]);
 			res_pic->SetPixel(kx, kz, Px);
 		}
 	}
-	
+	std::cout << "\nGOTOWE!\n\n";
 	return res_pic;
 }
 
 std::vector<std::vector<int>> normalize_vector(std::vector<std::vector<double>> input) {
 	std::vector<std::vector<int>> res_vector(input.size(), std::vector<int>(input[0].size(), 0));
-	double min = 5000;// std::numeric_limits<double>::max();
+	double min = std::numeric_limits<double>::max();
 	double max = 0;
-	//std::cout << input[2][3] << "\n";
 	for(int i = 0; i < input.size(); i++) {
 		for(int j = 0; j < input[i].size(); j++) {
-			//std::cout << input[i][j] << "\n";
 			if(input[i][j] > max) {
 				max = input[i][j];
 			}
@@ -233,16 +201,11 @@ std::vector<std::vector<int>> normalize_vector(std::vector<std::vector<double>> 
 			}
 		}
 	}
-	//std::cout << "max = " << max << "\n";
-	//std::cout << "min = " << min << "\n";
 	double old_range = max - min;
-	//if(old_range < 0)
-		//std::cout << old_range << "\n";
 	for(int i = 0; i < input.size(); i++) {
 		for(int j = 0; j < input[i].size(); j++) {
 			double scale = (input[i][j] - min) / old_range;
 			res_vector[i][j] = (int)(255 * scale);
-			//std::cout << res_vector[i][j] << "\n";
 		}
 	}
 	return res_vector;
@@ -256,7 +219,6 @@ std::vector<std::vector<int>> line_strel(int len, int angle) {
 	int y2 = (sin(angle_rad) * len) - 1;
 	x2 = x2 % 2 ? x2 + 1 : x2;
 	y2 = y2 % 2 ? y2 + 1 : y2;
-	//std::cout << x2 << " " << y2 << "\n";
 	std::vector<std::vector<int>> strel_vec(x2 + 1, std::vector<int>(y2 + 1, 0));
 	int dx = abs(x2 - x1); 
 	int sx = x1 < x2 ? 1 : -1;
@@ -375,5 +337,65 @@ System::Drawing::Bitmap^ erosion(System::Drawing::Bitmap^ pic, std::unordered_mu
 	return res_pic;
 }
 
+System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y) {
+	const int width = pic->Width;
+	const int height = pic->Height;
+	std::vector<std::vector<int>> marker(height, std::vector<int>(width));
+	std::vector<std::vector<int>> distance(height, std::vector<int>(width));
+	System::Drawing::Bitmap^ res_pic = gcnew System::Drawing::Bitmap(width, height);
+	for(int kz = 0; kz < height; kz++) {
+		for(int kx = 0; kx < width; kx++) {
+			distance[kx][kz] = -1;
+		}
+	}
+	distance[x][y] = 0;
+	int min_x = x;
+	int max_x = x;
+	int min_y = y;
+	int max_y = y;
+
+	int iter = 1;
+	int flag;
+	int temp;
+	while(1) {
+		flag = 0;
+		min_x--;
+		max_x++;
+		min_y--;
+		max_y++;
+
+		for(int kz = min_y; kz <= max_y; kz++) {
+			for(int kx = min_x; kx <= max_x; kx++) {
+				if(kz >= 0 && kz < height && kx >= 0 && kx < width) {
+					System::Drawing::Color Px = pic->GetPixel(kx, kz);
+					if((int)Px.R == 255) {
+						marker[kx][kz] = 1;
+						if(distance[kx][kz] == -1) {
+							distance[kx][kz] = iter;
+							flag++;
+						}
+					}
+				}
+			}
+		}
+		iter++;
+		if(flag == 0) {
+			break;
+		}
+	}
+	iter--;
+	for(int kz = 0; kz < height; kz++) {
+		for(int kx = 0; kx < width; kx++) {
+			if(distance[kx][kz] > 0) {
+				temp = distance[kx][kz] * 255 / iter;
+			}
+			else {
+				temp = 0;
+			}
+			res_pic->SetPixel(kx, kz, System::Drawing::Color::FromArgb(temp, temp, temp));
+		}
+	}
+		return res_pic;
+}
 
 
