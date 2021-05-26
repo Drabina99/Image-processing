@@ -48,95 +48,82 @@ int main() {
 			"Dowolny inny klawisz, aby wyjsc z programu...\n : ";
 		std::cin >> choice;
 		switch(choice) {
-		case '1': {
-			std::cout << "PRZEKSZTALCENIE AFINICZNE\n\n";
-			std::vector<double> T = read_T();
-			System::Drawing::Bitmap^ affine_pic_RGB = affine(pic_RGB, T);
-			System::Drawing::Bitmap^ affine_pic_mono = affine(pic_mono, T);
-			affine_pic_RGB->Save(R"(D:\affine_RGB.png)");
-			affine_pic_mono->Save(R"(D:\affine_mono.png)");
-			break;
-		}
-		case '2': {
-			int neigh = 0;
-			std::cout << "FILTRACJA ENTROPII\n\nProsze podac rozmiar okna: ";
-			std::cin >> neigh;
-			std::cout << "\n";
-			System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, neigh, false);
-			ent_pic_mono->Save(R"(D:\ent_mono.png)");
-			System::Drawing::Bitmap^ ent_pic_rgb = entropy_filt(pic_RGB, neigh, true);
-		    ent_pic_rgb->Save(R"(D:\ent_RGB.png)");
-			break;
-		}
-		case '3': {
-			int len = 0;
-			int angle = 0;
-			std::cout << "ZAMKNIECIE LINIOWYM ELEMENTEM STRUKTURALNYM\n"
-				"Prosze podac dlugosc elementu: ";
-			std::cin >> len;
-			std::cout << "Prosze podac kat: ";
-			std::cin >> angle;
-			std::vector<std::vector<int>> vec_strel = line_strel(len, angle);
-			std::cout << "Element strukturalny:\n\n";
-			for(int i = 0; i < vec_strel.size(); i++) {
-				for(int j = 0; j < vec_strel[i].size(); j++)
-					std::cout << vec_strel[i][j] << " ";
+			case '1': {
+				std::cout << "PRZEKSZTALCENIE AFINICZNE\n\n";
+				std::vector<double> T = read_T();
+				System::Drawing::Bitmap^ affine_pic_RGB = affine(pic_RGB, T);
+				System::Drawing::Bitmap^ affine_pic_mono = affine(pic_mono, T);
+				affine_pic_RGB->Save(R"(D:\affine_RGB.png)");
+				affine_pic_mono->Save(R"(D:\affine_mono.png)");
+				break;
+			}
+			case '2': {
+				int neigh = 0;
+				std::cout << "FILTRACJA ENTROPII\n\nProsze podac rozmiar okna: ";
+				std::cin >> neigh;
 				std::cout << "\n";
+				System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, neigh, false);
+				ent_pic_mono->Save(R"(D:\ent_mono.png)");
+				System::Drawing::Bitmap^ ent_pic_rgb = entropy_filt(pic_RGB, neigh, true);
+				ent_pic_rgb->Save(R"(D:\ent_RGB.png)");
+				break;
 			}
-			std::cout << "n";
-			int x_cent = vec_strel.size() / 2;
-			int y_cent = vec_strel[0].size() / 2;
-			std::unordered_multimap<int, int> map_strel;
-			const int vec_size = vec_strel.size();
-			for(int i = 0; i < vec_size; i++) {
-				for(int j = 0; j < vec_strel[i].size(); j++) {
-					if(vec_strel[i][j])
-						map_strel.insert({i - x_cent, j - y_cent});
+			case '3': {
+				int len = 0;
+				int angle = 0;
+				std::cout << "\nZAMKNIECIE LINIOWYM ELEMENTEM STRUKTURALNYM\n"
+					"Prosze podac dlugosc elementu: ";
+				std::cin >> len;
+				std::cout << "Prosze podac kat: ";
+				std::cin >> angle;
+				std::vector<std::vector<int>> vec_strel = line_strel(len, angle);
+				std::cout << "\nElement strukturalny:\n---------------------\n";
+				for(int i = 0; i < vec_strel.size(); i++) {
+					for(int j = 0; j < vec_strel[i].size(); j++)
+						std::cout << vec_strel[i][j] << " ";
+					std::cout << "\n";
 				}
+				std::cout << "---------------------\n";
+				int x_cent = vec_strel.size() / 2;
+				int y_cent = vec_strel[0].size() / 2;
+				std::unordered_multimap<int, int> map_strel;
+				const int vec_size = vec_strel.size();
+				for(int i = 0; i < vec_size; i++) {
+					for(int j = 0; j < vec_strel[i].size(); j++) {
+						if(vec_strel[i][j])
+							map_strel.insert({i - x_cent, j - y_cent});
+					}
+				}
+				std::cout << "Przetwarzanie obrazu, prosze czekac...\n";
+				System::Drawing::Bitmap^ closed_bmp = erosion(dilatation(pic_bin, map_strel, true), 
+															  map_strel, true);
+				std::cout << "ZAMKNIECIE ZAKONCZONE!\n";
+				std::cout << "Przetwarzanie obrazu, prosze czekac...\n";
+				System::Drawing::Bitmap^ closed_mono = erosion(dilatation(pic_mono, map_strel, false), 
+															   map_strel, false);
+				std::cout << "ZAMKNIECIE ZAKONCZONE!\n";
+				closed_bmp->Save(R"(D:\closed_bin.png)");
+				closed_mono->Save(R"(D:\closed_mono.png)");
+				break;
 			}
-			for(auto it : map_strel)
-				std::cout << it.first << " " << it.second << "\n";
-			System::Drawing::Bitmap^ closed_bmp = erosion(dilatation(pic_bin, map_strel, true), map_strel, true);
-			System::Drawing::Bitmap^ closed_mono = erosion(dilatation(pic_mono, map_strel, false), map_strel, false);
-			closed_bmp->Save(R"(D:\closed_bin.png)");
-			closed_mono->Save(R"(D:\closed_mono.png)");
-			break;
-		}
-		default: {
-			std::cout << "\nDziekuje za skorzystanie z programu!\nDo zobaczenia!\n";
-			return 0;
-		}
-		}
-	}
-	
-	/*std::vector<std::vector<int>> vec_strel = line_strel(13, 60);
-	for(int i = 0; i < vec_strel.size(); i++) {
-		for(int j = 0; j < vec_strel[i].size(); j++)
-			std::cout << vec_strel[i][j] << " ";
-		std::cout << "\n";
-	}
-	int x_cent = vec_strel.size() / 2;
-	int y_cent = vec_strel[0].size() / 2;
-	//std::cout << x_sr << " " << y_sr << "\n";
-	std::unordered_multimap<int, int> map_strel;
-	const int vec_size = vec_strel.size();
-	for(int i = 0; i < vec_size; i++) {
-		for(int j = 0; j < vec_strel[i].size(); j++) {
-			if(vec_strel[i][j])
-				map_strel.insert({i - x_cent, j - y_cent});
+			case '4': {
+				int x = 0, y = 0;
+				std::cout << "\nMAPA ODLEGLOSCI GEODEZYJNEJ\n";
+				std::cout << "Prosze podac pierwsza wspolrzedna punktu: ";
+				std::cin >> x;
+				std::cout << "Prosze podac druga wspolrzedna punktu: ";
+				std::cin >> y;
+				System::Drawing::Bitmap^ geodesic = geodesic_map(pic_bin, x, y);
+				geodesic->Save(R"(D:\geodesic.png)");
+				break;
+			}
+			default: {
+				std::cout << "\nDziekuje za skorzystanie z programu!\nDo zobaczenia!\n";
+				return 0;
+			}
 		}
 	}
-	for(auto it : map_strel)
-		std::cout << it.first << " " << it.second << "\n";
-	System::Drawing::Bitmap^ closed_bmp = erosion(dilatation(pic_bin, map_strel, true), map_strel, true);
-	System::Drawing::Bitmap^ closed_mono = erosion(dilatation(pic_mono, map_strel, false), map_strel, false);
-	closed_bmp->Save(R"(D:\AO\closed_bmp.png)");
-	closed_mono->Save(R"(D:\AO\closed_mono.png)");*/
-
-	//System::Drawing::Bitmap^ geodesic = geodesic_map(pic_bin, 93, 96);
-	//geodesic->Save(R"(D:\AO\geodesic.png)");
-
-	//return 0;
+	return 0;
 }
 
 std::string read_path() {
@@ -199,7 +186,7 @@ System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double
 			
 		}
 	}
-	std::cout << "PRZEKSZTALCANIE AFINICZNE ZAKONCZONE!\n";
+	std::cout << "PRZEKSZTALCANIE AFINICZNE ZAKONCZONE!\n\n";
 	return res_pic;
 }
 
@@ -375,7 +362,6 @@ System::Drawing::Bitmap^ erosion(System::Drawing::Bitmap^ pic, std::unordered_mu
 				if(kz + it.first >= 0 && kz + it.first < height && kx + it.second >= 0 && kx + it.second < width &&
 				   it.first != 0 && it.second != 0) {
 					System::Drawing::Color Px = pic->GetPixel(kx + it.second, kz + it.first);
-					//std::cout << px_color << "\n";
 					if(is_binary) {
 						if((int)Px.R == 0) {
 							res_pic->SetPixel(kx, kz, System::Drawing::Color::FromArgb(0, 0, 0));
@@ -402,7 +388,7 @@ System::Drawing::Bitmap^ erosion(System::Drawing::Bitmap^ pic, std::unordered_mu
 }
 
 System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y) {
-	std::cout << "MAPA ODLEGLOSCI GEODEZYJNEJ\nPrzetwarzanie obrazu, prosze czekac...\n";
+	std::cout << "\nPrzetwarzanie obrazu, prosze czekac...\n";
 	const int width = pic->Width;
 	const int height = pic->Height;
 	std::vector<std::vector<int>> marker(width, std::vector<int>(height));
@@ -460,7 +446,8 @@ System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y
 			res_pic->SetPixel(kx, kz, System::Drawing::Color::FromArgb(temp, temp, temp));
 		}
 	}
-		return res_pic;
+	std::cout << "MAPA ODLEGLOSCI GEODEZYJNEJ UZYSKANA!\n\n";
+	return res_pic;
 }
 
 
