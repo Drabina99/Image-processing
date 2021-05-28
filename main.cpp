@@ -24,18 +24,17 @@ System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y
 
 int main() {
 	std::cout << "************************************\n"
-				 "| Program do przetwarzania obrazow |\n"
-		         "| Piotr Drabicki 2021              |\n"
+				 "| Image processing                 |\n"
+		         "| 2021 Piotr Drabicki              |\n"
 		         "|                                  |\n"
 		         "************************************\n"
 		         "************************************\n";
-	std::cout << "\nDzien dobry!\n\nNa poczatku prosze o skonfigurowanie obrazow testowych.\n"
-		"Obrazy te beda uzywane w poszczegolnych operacjach.\n\n";
-	std::cout << "OBRAZ RGB:\n";
+	std::cout << "\nPlease specify test images.\n\n";
+	std::cout << "RGB\n";
 	System::String^ path_RGB = gcnew System::String(read_path().c_str());
-	std::cout << "OBRAZ MONOCHROMATYCZNY:\n";
+	std::cout << "MONOCHROME\n";
 	System::String^ path_mono = gcnew System::String(read_path().c_str());
-	std::cout << "OBRAZ LOGICZNY:\n";
+	std::cout << "BINARY\n";
 	System::String^ path_bin = gcnew System::String(read_path().c_str());
 	System::Drawing::Bitmap^ pic_RGB = gcnew System::Drawing::Bitmap(path_RGB, true);
 	System::Drawing::Bitmap^ pic_mono = gcnew System::Drawing::Bitmap(path_mono, true);
@@ -43,13 +42,13 @@ int main() {
 	
 	while(1) {
 		char choice;
-		std::cout << "\nProsze wybrac operacje:\n1) przeksztalcenie afiniczne\n2) filtracja entropii\n"
-			"3) zamkniecie liniowym elementem strukturalnym\n4) mapa odleglosci geodezyjnej\n"
-			"Dowolny inny klawisz, aby wyjsc z programu...\n : ";
+		std::cout << "\nPlease choose the operation:\n1) Affine transformation\n2) Entropy filtering\n"
+			"3) Closing\n4) Geodesic map\n"
+			"Press any other key to exit...\n : ";
 		std::cin >> choice;
 		switch(choice) {
 			case '1': {
-				std::cout << "PRZEKSZTALCENIE AFINICZNE\n\n";
+				std::cout << "\nAFFINE TRANSFORMATION\n\n";
 				std::vector<double> T = read_T();
 				System::Drawing::Bitmap^ affine_pic_RGB = affine(pic_RGB, T);
 				System::Drawing::Bitmap^ affine_pic_mono = affine(pic_mono, T);
@@ -59,7 +58,7 @@ int main() {
 			}
 			case '2': {
 				int neigh = 0;
-				std::cout << "FILTRACJA ENTROPII\n\nProsze podac rozmiar okna: ";
+				std::cout << "\nENTROPY FILTERING\n\nPlease specify neighbourhood size: ";
 				std::cin >> neigh;
 				std::cout << "\n";
 				System::Drawing::Bitmap^ ent_pic_mono = entropy_filt(pic_mono, neigh, false);
@@ -71,13 +70,13 @@ int main() {
 			case '3': {
 				int len = 0;
 				int angle = 0;
-				std::cout << "\nZAMKNIECIE LINIOWYM ELEMENTEM STRUKTURALNYM\n"
-					"Prosze podac dlugosc elementu: ";
+				std::cout << "\nCLOSING\n"
+					"Please specify linear structuring element length: ";
 				std::cin >> len;
-				std::cout << "Prosze podac kat: ";
+				std::cout << "Please specify angle: ";
 				std::cin >> angle;
 				std::vector<std::vector<int>> vec_strel = line_strel(len, angle);
-				std::cout << "\nElement strukturalny:\n---------------------\n";
+				std::cout << "\nStructuring element:\n---------------------\n";
 				for(int i = 0; i < vec_strel.size(); i++) {
 					for(int j = 0; j < vec_strel[i].size(); j++)
 						std::cout << vec_strel[i][j] << " ";
@@ -94,31 +93,31 @@ int main() {
 							map_strel.insert({i - x_cent, j - y_cent});
 					}
 				}
-				std::cout << "Przetwarzanie obrazu, prosze czekac...\n";
+				std::cout << "Please wait...\n";
 				System::Drawing::Bitmap^ closed_bmp = erosion(dilatation(pic_bin, map_strel, true), 
 															  map_strel, true);
-				std::cout << "ZAMKNIECIE ZAKONCZONE!\n";
-				std::cout << "Przetwarzanie obrazu, prosze czekac...\n";
+				std::cout << "DONE!\n";
+				std::cout << "Please wait...\n";
 				System::Drawing::Bitmap^ closed_mono = erosion(dilatation(pic_mono, map_strel, false), 
 															   map_strel, false);
-				std::cout << "ZAMKNIECIE ZAKONCZONE!\n";
+				std::cout << "DONE!\n";
 				closed_bmp->Save(R"(D:\closed_bin.png)");
 				closed_mono->Save(R"(D:\closed_mono.png)");
 				break;
 			}
 			case '4': {
 				int x = 0, y = 0;
-				std::cout << "\nMAPA ODLEGLOSCI GEODEZYJNEJ\n";
-				std::cout << "Prosze podac pierwsza wspolrzedna punktu: ";
+				std::cout << "\nGEODESIC MAP\n";
+				std::cout << "Please specify the point.\nx: ";
 				std::cin >> x;
-				std::cout << "Prosze podac druga wspolrzedna punktu: ";
+				std::cout << "y: ";
 				std::cin >> y;
 				System::Drawing::Bitmap^ geodesic = geodesic_map(pic_bin, x, y);
 				geodesic->Save(R"(D:\geodesic.png)");
 				break;
 			}
 			default: {
-				std::cout << "\nDziekuje za skorzystanie z programu!\nDo zobaczenia!\n";
+				std::cout << "\nGoodbye!\n";
 				return 0;
 			}
 		}
@@ -128,7 +127,7 @@ int main() {
 
 std::string read_path() {
 	std::string res = R"()";
-	std::cout << "Prosze podac sciezke do pliku: ";
+	std::cout << "Path: ";
 	std::getline(std::cin, res);
 	return res;
 }
@@ -150,15 +149,16 @@ System::Drawing::Bitmap^ RGB_to_mono(System::Drawing::Bitmap^ pic_RGB) {
 std::vector<double> read_T() {
 	std::vector<double> T_vec(4);
 	char T_ind = 'A';
+	std::cout << "Please specify TA-TD values.\n";
 	for(double& x : T_vec) {
-		std::cout << "Prosze podac wartosc T" << T_ind++ << ": ";
+		std::cout << "T" << T_ind++ << ": ";
 		std::cin >> x;
 	}
 	return T_vec;
 }
 
 System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double> T) {
-	std::cout << "\nPrzetwarzanie obrazu, prosze czekac...\n";
+	std::cout << "\nPlease wait...\n";
 	const int width = pic->Width;
 	const int height = pic->Height;
 	int max_up = height;
@@ -186,12 +186,12 @@ System::Drawing::Bitmap^ affine(System::Drawing::Bitmap^ pic, std::vector<double
 			
 		}
 	}
-	std::cout << "PRZEKSZTALCANIE AFINICZNE ZAKONCZONE!\n\n";
+	std::cout << "DONE!\n\n";
 	return res_pic;
 }
 
 System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, bool is_RGB) {
-	std::cout << "\nPrzetwarzanie obrazu, prosze czekac...\n";
+	std::cout << "\nPlease wait...\n";
 	std::cout << "\n|0%            100%|\n";
 	if(is_RGB) {
 		pic = RGB_to_mono(pic);
@@ -202,7 +202,7 @@ System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, b
 	System::Drawing::Bitmap^ res_pic = gcnew System::Drawing::Bitmap(width, height);
 	for(int kz = 0; kz < height; kz++) {
 		if(kz % (height / 10) == 0 && kz != 0)
-			std::cout << "**";
+			std::cout << "**"; // loading bar
 		for(int kx = 0; kx < width; kx++) {
 			int sum = 0;
 			int count = 0;
@@ -234,7 +234,7 @@ System::Drawing::Bitmap^ entropy_filt(System::Drawing::Bitmap^ pic, int nhood, b
 			res_pic->SetPixel(kx, kz, Px);
 		}
 	}
-	std::cout << "\nFILTRACJA ENTROPII ZAKONCZONA!\n\n";
+	std::cout << "\nDONE!\n\n";
 	return res_pic;
 }
 
@@ -388,7 +388,7 @@ System::Drawing::Bitmap^ erosion(System::Drawing::Bitmap^ pic, std::unordered_mu
 }
 
 System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y) {
-	std::cout << "\nPrzetwarzanie obrazu, prosze czekac...\n";
+	std::cout << "\nPlease wait...\n";
 	const int width = pic->Width;
 	const int height = pic->Height;
 	std::vector<std::vector<int>> marker(width, std::vector<int>(height));
@@ -446,7 +446,7 @@ System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y
 			res_pic->SetPixel(kx, kz, System::Drawing::Color::FromArgb(temp, temp, temp));
 		}
 	}
-	std::cout << "MAPA ODLEGLOSCI GEODEZYJNEJ UZYSKANA!\n\n";
+	std::cout << "DONE!\n\n";
 	return res_pic;
 }
 
