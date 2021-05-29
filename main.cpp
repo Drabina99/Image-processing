@@ -402,11 +402,10 @@ System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y
 	int max_x = x;
 	int min_y = y;
 	int max_y = y;
-	int flag = 0;
 	int it = 1;
 	dist[x][y] = 0;
 	while(1) {
-		flag = 0;
+		bool found_white_to_set = false;
 		min_x--;
 		min_y--;
 		max_x++;
@@ -418,14 +417,14 @@ System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y
 					if((int)Px.R == 255) {
 						if(dist[kx][kz] < 0) {
 							dist[kx][kz] = it;
-							flag++;
+							found_white_to_set = true;
 						}
 					}
 				}
 			}
 		}
 		it++;
-		if(!flag) {
+		if(!found_white_to_set) {
 			break;
 		}
 	}
