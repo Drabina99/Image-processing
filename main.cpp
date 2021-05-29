@@ -391,59 +391,49 @@ System::Drawing::Bitmap^ geodesic_map(System::Drawing::Bitmap^ pic, int x, int y
 	std::cout << "\nPlease wait...\n";
 	const int width = pic->Width;
 	const int height = pic->Height;
-	std::vector<std::vector<int>> marker(width, std::vector<int>(height));
-	std::vector<std::vector<int>> distance(width, std::vector<int>(height));
+	std::vector<std::vector<int>> dist(width, std::vector<int>(height));
 	System::Drawing::Bitmap^ res_pic = gcnew System::Drawing::Bitmap(width, height);
 	for(int kz = 0; kz < height; kz++) {
 		for(int kx = 0; kx < width; kx++) {
-			distance[kx][kz] = -1;
+			dist[kx][kz] = -1;
 		}
 	}
-	distance[x][y] = 0;
 	int min_x = x;
 	int max_x = x;
 	int min_y = y;
 	int max_y = y;
-
-	int iter = 1;
-	int flag;
-	int temp;
+	int flag = 0;
+	int it = 1;
+	dist[x][y] = 0;
 	while(1) {
 		flag = 0;
 		min_x--;
-		max_x++;
 		min_y--;
+		max_x++;
 		max_y++;
-
 		for(int kz = min_y; kz <= max_y; kz++) {
 			for(int kx = min_x; kx <= max_x; kx++) {
 				if(kz >= 0 && kz < height && kx >= 0 && kx < width) {
 					System::Drawing::Color Px = pic->GetPixel(kx, kz);
 					if((int)Px.R == 255) {
-						marker[kx][kz] = 1;
-						if(distance[kx][kz] == -1) {
-							distance[kx][kz] = iter;
+						if(dist[kx][kz] < 0) {
+							dist[kx][kz] = it;
 							flag++;
 						}
 					}
 				}
 			}
 		}
-		iter++;
-		if(flag == 0) {
+		it++;
+		if(!flag) {
 			break;
 		}
 	}
-	iter--;
+	it--;
 	for(int kz = 0; kz < height; kz++) {
 		for(int kx = 0; kx < width; kx++) {
-			if(distance[kx][kz] > 0) {
-				temp = distance[kx][kz] * 255 / iter;
-			}
-			else {
-				temp = 0;
-			}
-			res_pic->SetPixel(kx, kz, System::Drawing::Color::FromArgb(temp, temp, temp));
+			int pixel = (dist[kx][kz] > 0) ? (dist[kx][kz] * 255 / it) : 0;
+			res_pic->SetPixel(kx, kz, System::Drawing::Color::FromArgb(pixel, pixel, pixel));
 		}
 	}
 	std::cout << "DONE!\n\n";
