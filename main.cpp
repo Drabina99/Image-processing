@@ -8,11 +8,11 @@
 
 int main() {
 	std::cout << "************************************\n"
-				 "| Image processing                 |\n"
-		         "| 2021 Piotr Drabicki              |\n"
-		         "|                                  |\n"
-		         "************************************\n"
-		         "************************************\n";
+		     "| Image processing                 |\n"
+		     "| 2021 Piotr Drabicki              |\n"
+		     "|                                  |\n"
+		     "************************************\n"
+		     "************************************\n";
 	std::cout << "\nPlease specify test images.\n\n";
 	std::cout << "RGB\n";
 	System::String^ path_RGB = gcnew System::String(read_path().c_str());
